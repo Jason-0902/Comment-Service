@@ -1,0 +1,22 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local database file
+dev.db
+instance/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+
+# Dotenv file
+.env
