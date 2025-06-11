@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>所有評價</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container mt-5">
+    <h3 class="mb-4">所有使用者評價</h3>
+    <a class="btn btn-secondary mb-3" href="{{ url_for('index') }}">返回首頁</a>
+
+    {% for review in reviews %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">{{ review.target_type }}：{{ review.target }}</h5>
+          <h6 class="card-subtitle text-muted">由 {{ review.user_name }} 提交於 {{ review.timestamp }}</h6>
+          <p class="card-text mt-2">⭐ 評分：{{ review.rating }} / 5</p>
+          <p class="card-text">{{ review.content }}</p>
+        </div>
+      </div>
+    {% else %}
+      <p class="text-muted">目前尚無任何評價。</p>
+    {% endfor %}
+  </div>
+</body>
+</html>

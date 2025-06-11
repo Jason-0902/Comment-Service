@@ -1,0 +1,52 @@
+{% extends "admin_base.html" %}
+
+{% block title %}管理教授 - 管理者後台{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">管理教授</h1>
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>教授姓名</th>
+                        <th>系所</th>
+                        <th class="text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prof in professors %}
+                    <tr>
+                        <td>{{ prof.id }}</td>
+                        <td>{{ prof.name }}</td>
+                        <td>{{ prof.department or '未指定' }}</td>
+                        <td class="text-end">
+                            <form method="POST" action="{{ url_for('delete_professor', prof_id=prof.id) }}" onsubmit="return confirm('您確定要刪除教授「{{ prof.name }}」嗎？此操作無法復原。');">
+                                <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> 刪除</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">目前沒有任何教授資料。</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

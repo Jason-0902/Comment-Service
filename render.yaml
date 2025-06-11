@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: Comment-Service
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app.main:app
+    envVars:
+      - key: FLASK_SECRET
+        fromEnvVar: FLASK_SECRET
+      - key: GOOGLE_CLIENT_ID
+        fromEnvVar: GOOGLE_CLIENT_ID
+      - key: GOOGLE_CLIENT_SECRET
+        fromEnvVar: GOOGLE_CLIENT_SECRET
+      - key: DATABASE_URL
+        fromEnvVar: DATABASE_URL

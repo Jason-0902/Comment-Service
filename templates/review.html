@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>撰寫評價</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/review.css') }}">
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container">
+      <a class="navbar-brand" href="{{ url_for('index') }}"><i class="fas fa-comments"></i> 學生匿名評價系統</a>
+      <div>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-light"><i class="fas fa-arrow-left"></i> 返回首頁</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="form-container">
+    <h3 class="mb-4 text-center">撰寫一則評價</h3>
+    
+    <!-- 【修正 #1】為了上傳檔案，必須在 form 標籤加入 enctype="multipart/form-data" -->
+    <form method="POST" action="{{ url_for('submit_review') }}" enctype="multipart/form-data">
+      
+      <!-- 大學選擇區塊 -->
+      <div class="mb-3">
+        <label class="form-label"><strong><i class="fas fa-university"></i> 學校：</strong></label>
+        <select id="university_select" name="university_id" class="form-select" required>
+            <option value="" disabled selected>-- 請選擇學校 --</option>
+            {% for uni in universities %}
+            <option value="{{ uni.id }}">{{ uni.name }}</option>
+            {% endfor %}
+            <option value="new">-- 手動新增一所大學 --</option>
+        </select>
+      </div>
+      <div id="new-university-input" class="mb-3" style="display: none;">
+          <label class="form-label">新大學名稱：</label>
+          <input type="text" name="new_university_name" class="form-control" placeholder="請輸入完整的大學名稱">
+      </div>
+
+      <!-- 評價對象選擇區塊 -->
+      <div class="mb-3">
+        <label class="form-label"><strong><i class="fas fa-bullseye"></i> 評價對象：</strong></label>
+        <select id="target_select" name="target_id_type" class="form-select" required>
+            <option value="" disabled selected>-- 請選擇教授或實驗室 --</option>
+            <optgroup label="教授">
+                {% for prof in professors %}
+                <option value="prof-{{ prof.id }}">{{ prof.name }} ({{ prof.university.name }} - {{ prof.department or '未指定科系' }})</option>
+                {% endfor %}
+            </optgroup>
+            <optgroup label="實驗室">
+                {% for lab in labs %}
+                <option value="lab-{{ lab.id }}">{{ lab.name }} ({{ lab.university.name }} - {{ lab.department or '未指定科系' }})</option>
+                {% endfor %}
+            </optgroup>
+            <optgroup label="---------">
+                <option value="prof-new">-- 手動新增一位教授 --</option>
+                <option value="lab-new">-- 手動新增一個實驗室 --</option>
+            </optgroup>
+        </select>
+      </div>
+      
+      <!-- 新增對象的詳細資訊輸入框 -->
+      <div id="new-entity-details" style="display: none;">
+          <div id="new-prof-input" class="mb-3" style="display: none;">
+              <label class="form-label">新教授名稱：</label>
+              <input type="text" name="new_professor_name" class="form-control" placeholder="請輸入完整的教授姓名">
+          </div>
+          <div id="new-lab-input" class="mb-3" style="display: none;">
+              <label class="form-label">新實驗室名稱：</label>
+              <input type="text" name="new_lab_name" class="form-control" placeholder="請輸入完整的實驗室名稱">
+          </div>
+          <div class="mb-3">
+              <label class="form-label">科系 (選填)：</label>
+              <input type="text" name="new_department" class="form-control" placeholder="例如：資訊工程學系">
+          </div>
+      </div>
+
+      <!-- 評分選擇 -->
+      <div class="mb-3">
+        <label class="form-label"><strong><i class="fas fa-star"></i> 評分：</strong></label>
+        <select name="rating" class="form-select" required>
+            <option value="5">5 ★ (非常好)</option>
+            <option value="4">4 ★ (很好)</option>
+            <option value="3" selected>3 ★ (普通)</option>
+            <option value="2">2 ★ (不太好)</option>
+            <option value="1">1 ★ (非常差)</option>
+        </select>
+      </div>
+
+      <!-- 評論內容 -->
+      <div class="mb-3">
+        <label class="form-label"><strong><i class="fas fa-pen-alt"></i> 評論內容：</strong></label>
+        <textarea name="content" class="form-control" rows="5" placeholder="寫下您的想法... (必填)" required></textarea>
+      </div>
+
+      <!-- 圖片上傳區塊 -->
+      <div id="lab-image-upload" class="mb-3" style="display: none;">
+        <label for="lab_image" class="form-label"><strong><i class="fas fa-image"></i> 上傳實驗室圖片 (選填)</strong></label>
+        <!-- 建議加上 accept 屬性，方便使用者篩選檔案 -->
+        <input class="form-control" type="file" id="lab_image" name="lab_image" accept="image/png, image/jpeg, image/gif">
+        <div class="form-text">只有在評價對象為「實驗室」時，才能上傳圖片。</div>
+      </div>
+
+      <button type="submit" class="btn btn-success w-100"><i class="fas fa-paper-plane"></i> 匿名提交評價</button>
+    </form>
+  </div>
+
+  <script>
+    // 【修正 #2】將 'target_select' 的兩個事件監聽合併為一個，避免衝突
+    document.getElementById('target_select').addEventListener('change', function() {
+        // --- 處理新增對象輸入框的邏輯 ---
+        const newEntityWrapper = document.getElementById('new-entity-details');
+        const profInputDiv = document.getElementById('new-prof-input');
+        const labInputDiv = document.getElementById('new-lab-input');
+        const profInput = profInputDiv.querySelector('input');
+        const labInput = labInputDiv.querySelector('input');
+
+        const isNewProf = (this.value === 'prof-new');
+        const isNewLab = (this.value === 'lab-new');
+
+        // 先全部隱藏並重設 required
+        newEntityWrapper.style.display = 'none';
+        profInputDiv.style.display = 'none';
+        profInput.required = false;
+        labInputDiv.style.display = 'none';
+        labInput.required = false;
+
+        if (isNewProf || isNewLab) {
+            newEntityWrapper.style.display = 'block';
+            if (isNewProf) {
+                profInputDiv.style.display = 'block';
+                profInput.required = true;
+            } else if (isNewLab) {
+                labInputDiv.style.display = 'block';
+                labInput.required = true;
+            }
+        }
+        
+        // --- 處理圖片上傳區塊的顯示邏輯 ---
+        const imageUploadDiv = document.getElementById('lab-image-upload');
+        // 檢查選擇的值是否以 'lab-' 開頭 (涵蓋現有實驗室和新實驗室)
+        if (this.value.startsWith('lab-')) {
+            imageUploadDiv.style.display = 'block';
+        } else {
+            imageUploadDiv.style.display = 'none';
+        }
+    });
+
+    // 控制新增大學輸入框的顯示 (此段邏輯正確，保持不變)
+    document.getElementById('university_select').addEventListener('change', function() {
+        const uniInput = document.getElementById('new-university-input');
+        if (this.value === 'new') {
+            uniInput.style.display = 'block';
+            uniInput.querySelector('input').required = true;
+        } else {
+            uniInput.style.display = 'none';
+            uniInput.querySelector('input').required = false;
+        }
+    });
+  </script>
+</body>
+</html>
