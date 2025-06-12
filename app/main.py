@@ -14,8 +14,6 @@ from dotenv import load_dotenv
 
 # --- 設定 ---
 load_dotenv()
-
-# 【修正】定義專案根目錄 (database/)，而不是 app/ 目錄
 # os.path.dirname(__file__) -> app/
 # os.path.join(..., '..') -> database/
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -26,7 +24,7 @@ STATIC_DIR = os.path.join(PROJECT_ROOT, 'static')
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.secret_key = os.environ.get("FLASK_SECRET", "dev_secret_key")
 
-# 【修正】讓本地開發的 SQLite 資料庫檔案 'dev.db' 建立在專案根目錄下
+# 讓本地開發的 SQLite 資料庫檔案 'dev.db' 建立在專案根目錄下
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(PROJECT_ROOT, 'dev.db')}")
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -44,8 +42,7 @@ google = oauth.register(
     client_kwargs={'scope': 'openid email profile'}
 )
 
-# === 資料庫模型 (此處無變動) ===
-
+# === 資料庫模型  ===
 class University(db.Model):
     __tablename__ = 'universities'
     id = db.Column(db.Integer, primary_key=True)
@@ -113,9 +110,8 @@ class ReviewBackup(db.Model):
     lab_id = db.Column(db.Integer)
     timestamp = db.Column(db.DateTime)
     archived_at = db.Column(db.DateTime, default=datetime.utcnow)
+# 資料模型 END
 
-
-# === 路由 (此部分邏輯不變) ===
 @app.route('/')
 def index():
     user = session.get('user')
@@ -290,7 +286,7 @@ def delete_review(review_id):
     flash(f'評價 (ID: {review_id}) 已被成功刪除。', 'info')
     return redirect(request.referrer or url_for('index'))
 
-# --- 管理後台功能 (保持不變) ---
+# 裝飾器：檢查是否為管理員
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -362,11 +358,12 @@ def delete_lab(lab_id):
         flash(f'實驗室 "{lab_to_delete.name}" 已被成功刪除。', 'success')
     return redirect(url_for('admin_labs'))
 
-# 【新增】手動執行備份的路由
+# 手動執行備份
 @app.route('/admin/backup', methods=['POST'])
 @admin_required
 def backup_reviews():
-    # 設定備份期限，例如超過 30 天的評論
+    # 設定備份期限
+    # 例如超過 30 天的評論
     cutoff_date = datetime.utcnow() - timedelta(days=30)
     
     reviews_to_backup = Review.query.filter(Review.timestamp < cutoff_date).all()
